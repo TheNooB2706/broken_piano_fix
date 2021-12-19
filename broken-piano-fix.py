@@ -13,6 +13,7 @@ def callback(frames):
             status, pitch, vel = struct.unpack("3B", indata)
             if (status >> 4 == NOTEON) and (pitch in note_list) and (vel >= threshold):
                 vel = 50 #naively change velocity to something constant
+                dprint(f"Note {pitch} exceed {threshold}, changing to {vel}")
             mid_send.write_midi_event(offset, (status, pitch, vel))
         else:
             mid_send.write_midi_event(offset, indata)
@@ -40,6 +41,10 @@ def initialise_note_list(note_list):
         temp_list += notes
     return temp_list
 
+def dprint(string):
+    if debug:
+        print(string)
+
 client = jack.Client("Broken Piano Filter")
 
 mid_recv = client.midi_inports.register("midi_in")
@@ -51,10 +56,13 @@ client.activate()
 if autoconnect:
     conn_in = client.get_ports(name_pattern=autoconn_name_in, is_input=True, is_midi=True)
     connect_port(mid_recv, conn_in, autoconn_name_in)
+    dprint(f"Connected input to {autoconn_name_in}")
     if not autoconn_in_only:
         conn_out = client.get_ports(name_pattern=autoconn_name_out, is_output=True, is_midi=True)
         connect_port(mid_send, conn_out, autoconn_name_out)
+        dprint(f"Connected output to {autoconn_name_out}")
 
 note_list = initialise_note_list(note_list)
+dprint(f"Note enabled: {note_list}")
     
 input("Enter to exit")
