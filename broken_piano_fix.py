@@ -84,6 +84,7 @@ note_buffer = Buffer(config.buffer_size)
 
 client.set_process_callback(callback)
 client.activate()
+dprint(f"Using {config.extrapolator_algorithm} alg.")
 
 if config.autoconnect:
     conn_in = client.get_ports(name_pattern=config.autoconn_name_in, is_output=True, is_midi=True)
