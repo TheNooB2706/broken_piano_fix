@@ -6,14 +6,15 @@ def dprint(string):
     if debug:
         print(string)
 
-def linear_extrapolator(target_offset, buffer_obj):
+def linear_extrapolator(events, buffer_obj):
     """Predict velocity with simple linear model.
 Parameters
 ----------
-target_offset: int
-    Offset of the midi event return from jack.OwnMidiPort.incoming_midi_events()
+events: tuple
+    Length of 2, consist of offset, pitch.
 buffer_obj: Buffer
     Buffer of the note events declared in broken-piano-fix"""
+    target_offset, pitch = events
     x = np.array([i[0]-buffer_obj.buff[0][0] for i in buffer_obj.buff]).reshape((-1, 1))
     y = np.array([i[2] for i in buffer_obj.buff])
     dprint(x)

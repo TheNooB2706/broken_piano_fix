@@ -15,7 +15,7 @@ def callback(frames):
             if (status >> 4 == NOTEON):
                 if (pitch in note_list):
                     if (vel >= config.threshold):
-                        vel = extrapolator.extrapolate(client.last_frame_time+offset, note_buffer) if (note_buffer.length() == config.buffer_size) else config.naive_value
+                        vel = extrapolator.extrapolate((client.last_frame_time+offset, pitch), note_buffer) if (note_buffer.length() == config.buffer_size) else config.naive_value
                         dprint(f"Note {pitch} exceed {config.threshold}, changing to {vel}")
                     else:
                         note_buffer.add((client.last_frame_time+offset, pitch, vel))
@@ -63,13 +63,13 @@ size: int
         self.size = size
         self.buff = []
     
-    def add(self, element):
+    def add(self, events):
         """Add events to buffer object.
 Parameters
 ----------
-element: tuple
+events: tuple
     Length of 3, consist of offset, pitch, vel. Offset should be added with last_frame_time so that the extrapolator works across cycles."""
-        self.buff.append(element)
+        self.buff.append(events)
         self.buff = self.buff[-self.size:]
 
     def length(self):
