@@ -28,7 +28,7 @@ buffer_obj: Buffer
     dprint(y)
     model = LinearRegression().fit(x, y)
     vel_pred = round(model.predict([[target_offset-buffer_obj.buff[0][0]]])[0])
-    dprint(f"R^2: {model.score(x, y)}")
+    #dprint(f"R^2: {model.score(x, y)}")
     dprint(f"Predicted: {vel_pred}")
     return returnvel(vel_pred, y)
         
@@ -48,7 +48,7 @@ buffer_obj: Buffer
     dprint(y)
     model = LinearRegression().fit(x, y)
     vel_pred = round(model.predict([[target_offset-buffer_obj.buff[0][0], pitch]])[0])
-    dprint(f"R^2: {model.score(x, y)}")
+    #dprint(f"R^2: {model.score(x, y)}")
     dprint(f"Predicted: {vel_pred}")
     return returnvel(vel_pred, y)
     
@@ -70,7 +70,7 @@ buffer_obj: Buffer
     dprint(y)
     model = LinearRegression().fit(x_, y)
     vel_pred = round(model.predict(transformer.transform([[target_offset-buffer_obj.buff[0][0]]]))[0])
-    dprint(f"R^2: {model.score(x_, y)}")
+    #dprint(f"R^2: {model.score(x_, y)}")
     dprint(f"Predicted: {vel_pred}")
     return returnvel(vel_pred, y)
 
@@ -93,7 +93,7 @@ buffer_obj: Buffer
     dprint(y)
     model = LinearRegression().fit(x_, y)
     vel_pred = round(model.predict(transformer.transform([[target_offset-buffer_obj.buff[0][0], pitch]]))[0])
-    dprint(f"R^2: {model.score(x_, y)}")
+    #dprint(f"R^2: {model.score(x_, y)}")
     dprint(f"Predicted: {vel_pred}")
     return returnvel(vel_pred, y)
 
