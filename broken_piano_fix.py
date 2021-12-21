@@ -7,7 +7,7 @@ import extrapolator
 NOTEON = 0x9 # First 4 bits of status byte
 #-------Callback--------
 def callback(frames):
-    global config
+    global config, count
     mid_send.clear_buffer()
     for offset, indata in mid_recv.incoming_midi_events():
         if len(indata) == 3:
@@ -17,6 +17,8 @@ def callback(frames):
                     if (vel >= config.threshold):
                         vel = extrapolator.extrapolate((client.last_frame_time+offset, pitch), note_buffer) if (note_buffer.length() == config.buffer_size) else config.naive_value
                         dprint(f"Note {pitch} exceed {config.threshold}, changing to {vel}")
+                        count += 1
+                        print(f"This program saved your ears {count} times since ran...", end = "\r")
                     else:
                         note_buffer.add((client.last_frame_time+offset, pitch, vel))
                 else:
@@ -81,6 +83,7 @@ mid_recv = client.midi_inports.register("midi_in")
 mid_send = client.midi_outports.register("midi_out")
 
 note_buffer = Buffer(config.buffer_size)
+count = 0
 
 client.set_process_callback(callback)
 client.activate()
