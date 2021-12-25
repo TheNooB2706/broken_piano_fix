@@ -14,9 +14,9 @@ def callback(frames):
             status, pitch, vel = struct.unpack("3B", indata)
             if (status >> 4 == NOTEON):
                 if (pitch in note_list):
-                    if (vel >= config.threshold):
+                    if (vel >= note_list[pitch]):
                         vel = extrapolator.extrapolate((client.last_frame_time+offset, pitch), note_buffer) if (note_buffer.length() == config.buffer_size) else config.naive_value
-                        dprint(f"Note {pitch} exceed {config.threshold}, changing to {vel}")
+                        dprint(f"Note {pitch} exceed {note_list[pitch]}, changing to {vel}")
                         count += 1
                         print(f"This program saved your ears {count} times since ran...", end = "\r")
                     else:
@@ -45,11 +45,12 @@ def parse_note(note):
         return [int(match[2])*12+base_notes[match[1]]]
     
 def initialise_note_list(note_list):
-    temp_list = []
+    temp_dict = {}
     for i in note_list:
         notes = parse_note(i)
-        temp_list += notes
-    return temp_list
+        for j in notes:
+            temp_dict[j] = note_list[i]
+    return temp_dict
 
 def dprint(string):
     if config.debug:
