@@ -23,6 +23,7 @@ def callback(frames):
                         note_buffer.add((client.last_frame_time+offset, pitch, vel))
                 else:
                     note_buffer.add((client.last_frame_time+offset, pitch, vel))
+                vel = map_velocity(vel, config.vel_curve)
             mid_send.write_midi_event(offset, (status, pitch, vel))
         else:
             mid_send.write_midi_event(offset, indata)
@@ -33,7 +34,7 @@ def connect_port(port_obj, port_list, portname):
         dprint(f"Connected {port_obj.name} to {port_list[0].name}")
     else:
         print(f"Port {portname} not found!")
-        
+
 def parse_note(note):
     import re
     base_notes = {"C":12, "C#":13, "D":14, "D#":15, "E":16, "F":17, "F#":18, "G":19, "G#":20, "A":21, "A#":22, "B":23}
@@ -55,6 +56,30 @@ def initialise_note_list(note_list):
 def dprint(string):
     if config.debug:
         print(string)
+
+def initialise_vel_curve(vel_curve_raw):
+    vel_curve = dict(vel_curve_raw) #making a local copy
+    if 0 not in vel_curve:
+        vel_curve[0] = 0
+    if 127 not in vel_curve:
+        vel_curve[127]=127
+    for i in vel_curve.items():
+        if not ((0 <= i[0] <= 127) and (0 <= i[1] <= 127)):
+            raise ValueError(f"MIDI velocity in velocity curve out of range: {i[0]}:{i[1]}")
+    vel_curve = dict(sorted(vel_curve.items(), key=lambda x:x[0])) #sorting velocity curve dictionary
+    
+    temp_vel_list = [i for i in vel_curve.items()]
+    for i in range(len(temp_vel_list)-1): #generating lookup table for mapping
+        lower = temp_vel_list[i] #lower bound, tuple in the form of (input, mapped output)
+        upper = temp_vel_list[i+1] #upper bound
+        for j in range(lower[0]+1, upper[0]): #j is the input value
+            mapped_output = round((j-lower[0])*(upper[1]-lower[1])/(upper[0]-lower[0])+lower[1]) #classic y=mx+c
+            vel_curve[j] = mapped_output #appending into dictionary
+    vel_curve = dict(sorted(vel_curve.items(), key=lambda x:x[0])) #resorting, technically not needed but just do it anyway
+    return vel_curve
+
+def map_velocity(input_vel, vel_curve):
+    return vel_curve[input_vel]
 #-------Class-----------
 class Buffer:
     def __init__(self, size):
@@ -89,6 +114,8 @@ count = 0
 client.set_process_callback(callback)
 client.activate()
 dprint(f"Using {config.extrapolator_algorithm} alg.")
+
+config.vel_curve = initialise_vel_curve(config.vel_curve)
 
 if config.autoconnect:
     conn_in = client.get_ports(name_pattern=config.autoconn_name_in, is_output=True, is_midi=True)
