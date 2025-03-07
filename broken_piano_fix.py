@@ -2,11 +2,15 @@ import jack
 import struct
 import config
 import extrapolator
+from pynput import keyboard
 
 #-------Const-----------
 NOTEON = 0x9 # First 4 bits of status byte
 NOTEOFF = 0x8
 CC = 0xB
+#-----State variable----
+transpose_degree = 0
+transpose_keybounded = True
 #-------Callback--------
 def callback(frames):
     global config, count
@@ -39,6 +43,14 @@ def callback(frames):
                     elif ccdata <= config.cc_list[ccnum][1]:
                         status = (NOTEOFF << 4) + channel
                         vel = 0
+                        
+            if ((status >> 4 == NOTEON) or (status >> 4 == NOTEOFF)) and (transpose_degree != 0):
+                transposed_pitch = transpose(pitch, transpose_degree)
+                if transposed_pitch is not None:
+                    pitch = transposed_pitch
+                else:
+                    continue
+                
             mid_send.write_midi_event(offset, (status, pitch, vel))
         else:
             mid_send.write_midi_event(offset, indata)
@@ -95,6 +107,12 @@ def initialise_vel_curve(vel_curve_raw):
 
 def map_velocity(input_vel, vel_curve):
     return vel_curve[input_vel]
+
+def transpose(pitch, transpose_degree):
+    transposed_pitch = pitch + transpose_degree
+    if not (0 <= transposed_pitch <= 127):
+        return False
+    return transposed_pitch
 #-------Class-----------
 class Buffer:
     def __init__(self, size):
@@ -117,6 +135,35 @@ events: tuple
 
     def length(self):
         return len(self.buff)
+#-------Keyboard event listener-----
+def on_press(key):
+    global transpose_degree
+    if transpose_keybounded:
+        old_transpose = transpose_degree
+        if key == keyboard.KeyCode.from_char("+"):
+            transpose_degree += 1
+        elif key == keyboard.KeyCode.from_char("-"):
+            transpose_degree -= 1
+        elif key == keyboard.KeyCode.from_char("*"):
+            transpose_degree += 12
+        elif key == keyboard.KeyCode.from_char("/"):
+            transpose_degree -= 12
+        elif key == keyboard.KeyCode.from_char("`"):
+            transpose_degree = 0
+            
+        if transpose_degree != old_transpose:
+            print(f"Current transpose: {transpose_degree}{' '*30}", end = "\r")
+            
+def on_keybinding():
+    global transpose_keybounded
+    transpose_keybounded = not transpose_keybounded
+    print(f"Transpose key bounded: {transpose_keybounded}{' '*30}", end = "\r")
+
+# Collect events until released
+listener = keyboard.Listener(on_press=on_press)
+listener.start()
+ghk = keyboard.GlobalHotKeys({'<ctrl>+<alt>+b': on_keybinding})
+ghk.start()
 #-------Vars------------
 client = jack.Client("Broken Piano Filter")
 
