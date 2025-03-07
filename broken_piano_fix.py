@@ -5,6 +5,8 @@ import extrapolator
 
 #-------Const-----------
 NOTEON = 0x9 # First 4 bits of status byte
+NOTEOFF = 0x8
+CC = 0xB
 #-------Callback--------
 def callback(frames):
     global config, count
@@ -12,6 +14,7 @@ def callback(frames):
     for offset, indata in mid_recv.incoming_midi_events():
         if len(indata) == 3:
             status, pitch, vel = struct.unpack("3B", indata)
+
             if (status >> 4 == NOTEON):
                 if (pitch in note_list):
                     if (vel >= note_list[pitch]):
@@ -24,6 +27,18 @@ def callback(frames):
                 else:
                     note_buffer.add((client.last_frame_time+offset, pitch, vel))
                 vel = map_velocity(vel, config.vel_curve)
+            elif (status >> 4 == CC):
+                ccnum = pitch
+                ccdata = vel
+                channel = status & 0b00001111
+                if (ccnum in config.cc_list) and config.cc_mapping:
+                    pitch = parse_note(config.cc_list[ccnum][2])[0]
+                    if ccdata >= config.cc_list[ccnum][0]:
+                        status = (NOTEON << 4) + channel
+                        vel = config.cc_list[ccnum][3]
+                    elif ccdata <= config.cc_list[ccnum][1]:
+                        status = (NOTEOFF << 4) + channel
+                        vel = 0
             mid_send.write_midi_event(offset, (status, pitch, vel))
         else:
             mid_send.write_midi_event(offset, indata)
